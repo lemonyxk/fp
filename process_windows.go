@@ -18,6 +18,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/lemonyxk/console"
 )
 
 func findProcessByPort(port ...int32) Processes {
@@ -25,13 +27,13 @@ func findProcessByPort(port ...int32) Processes {
 		return nil
 	}
 
-	var ps []int32
-
 	var re = regexp.MustCompile(`\s+`)
 	var bts, err = execCmd("netstat", "-navo")
 	if err != nil {
 		return nil
 	}
+
+	var processes Processes
 
 	var arr = strings.Split(string(bts), "\n")
 	for i := 0; i < len(arr); i++ {
@@ -50,9 +52,11 @@ func findProcessByPort(port ...int32) Processes {
 		}
 
 		var ok = false
+		var cp = -1
 		for j := 0; j < len(port); j++ {
 			if strings.HasSuffix(findArr[1], fmt.Sprintf(":%d", port[j])) {
 				ok = true
+				cp = port[j]
 				break
 			}
 		}
@@ -66,9 +70,19 @@ func findProcessByPort(port ...int32) Processes {
 			continue
 		}
 
-		ps = append(ps, int32(intP))
+		var p = findProcessByPID(int32(intP))
+		if len(p) == 0 {
+			continue
+		}
+
+		for k := 0; k < len(p); k++ {
+			p[k].Port = console.FgRed.Sprintf("%d", cp)
+			p[k].Pid = fmt.Sprintf("%d", p[k].process.Pid)
+		}
+
+		processes = append(processes, p...)
+
 	}
 
-	return findProcessByPID(ps...)
-
+	return processes
 }

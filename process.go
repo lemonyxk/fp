@@ -25,6 +25,7 @@ import (
 type Process struct {
 	Name       string
 	Pid        string
+	Port       string
 	CreateTime int64
 	process    *process.Process
 }
@@ -41,11 +42,21 @@ func (p Processes) String() string {
 	// table.Style().Options.SeparateColumns = false
 	// table.Header("CreateTime", "Pid", "Name")
 	for i := 0; i < len(p); i++ {
-		table.Row(
-			utils.Time.Timestamp(p[i].CreateTime).Format("01-02 15:04:05"),
-			p[i].Pid,
-			p[i].Name,
-		)
+
+		if p[i].Port != "" {
+			table.Row(
+				utils.Time.Timestamp(p[i].CreateTime).Format("01-02 15:04:05"),
+				p[i].Pid,
+				p[i].Name,
+				p[i].Port,
+			)
+		} else {
+			table.Row(
+				utils.Time.Timestamp(p[i].CreateTime).Format("01-02 15:04:05"),
+				p[i].Pid,
+				p[i].Name,
+			)
+		}
 	}
 	return table.Render()
 }
@@ -97,7 +108,7 @@ func findProcessByPID(pid ...int32) Processes {
 
 			res = append(res, Process{
 				Name:       name,
-				Pid:        fmt.Sprintf("%d", process.Pid),
+				Pid:        console.FgRed.Sprintf("%d", process.Pid),
 				CreateTime: createTime / 1000,
 				process:    process,
 			})

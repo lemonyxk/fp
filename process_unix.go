@@ -17,6 +17,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/lemonyxk/console"
 )
 
 func findProcessByPort(port ...int32) Processes {
@@ -24,34 +26,41 @@ func findProcessByPort(port ...int32) Processes {
 		return nil
 	}
 
-	var ps []int32
+	var processes Processes
 
-	var params = []string{"lsof"}
 	for i := 0; i < len(port); i++ {
-		params = append(params, "-i", fmt.Sprintf(":%d", port[i]))
-	}
 
-	params = append(params, "-t", "-s", "TCP:LISTEN")
-
-	var str, err = execCmd(params[0], params[1:]...)
-	if err != nil {
-		return nil
-	}
-
-	var arr = strings.Split(string(str), "\n")
-	for i := 0; i < len(arr); i++ {
-		var s = strings.TrimSpace(arr[i])
-		if s == "" {
+		var str, err = execCmd("lsof", "-t", "-s", "TCP:LISTEN", "-i", fmt.Sprintf(":%d", port[i]))
+		if err != nil {
 			continue
 		}
 
-		var intP, _ = strconv.Atoi(s)
-		if intP == 0 {
-			continue
+		var arr = strings.Split(string(str), "\n")
+		for j := 0; j < len(arr); j++ {
+			var s = strings.TrimSpace(arr[j])
+			if s == "" {
+				continue
+			}
+
+			var intP, _ = strconv.Atoi(s)
+			if intP == 0 {
+				continue
+			}
+
+			var p = findProcessByPID(int32(intP))
+			if len(p) == 0 {
+				continue
+			}
+
+			for k := 0; k < len(p); k++ {
+				p[k].Port = console.FgRed.Sprintf("%d", port[i])
+				p[k].Pid = fmt.Sprintf("%d", p[k].process.Pid)
+			}
+
+			processes = append(processes, p...)
 		}
 
-		ps = append(ps, int32(intP))
 	}
 
-	return findProcessByPID(ps...)
+	return processes
 }
