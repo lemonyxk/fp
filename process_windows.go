@@ -52,7 +52,7 @@ func findProcessByPort(port ...int32) Processes {
 		}
 
 		var ok = false
-		var cp = -1
+		var cp int32 = -1
 		for j := 0; j < len(port); j++ {
 			if strings.HasSuffix(findArr[1], fmt.Sprintf(":%d", port[j])) {
 				ok = true
