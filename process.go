@@ -23,7 +23,7 @@ import (
 
 type Process struct {
 	Name       string
-	Pid        int32
+	Pid        string
 	CreateTime int64
 }
 
@@ -64,7 +64,7 @@ func list() Processes {
 
 		res = append(res, Process{
 			Name:       name,
-			Pid:        process.Pid,
+			Pid:        fmt.Sprintf("%d", process.Pid),
 			CreateTime: createTime / 1000,
 		})
 	}
@@ -94,7 +94,7 @@ func findProcessByPID(pid ...int32) Processes {
 
 			res = append(res, Process{
 				Name:       name,
-				Pid:        process.Pid,
+				Pid:        fmt.Sprintf("%d", process.Pid),
 				CreateTime: createTime / 1000,
 			})
 
@@ -128,13 +128,18 @@ func findProcessByString(str ...string) Processes {
 
 		var r = Process{
 			Name:       name,
-			Pid:        process.Pid,
+			Pid:        fmt.Sprintf("%d", process.Pid),
 			CreateTime: createTime / 1000,
 		}
 
 		for j := 0; j < len(str); j++ {
-			if strings.Contains(name, str[j]) ||
-				strings.Contains(fmt.Sprintf("%d", process.Pid), str[j]) {
+			if strings.Contains(name, str[j]) {
+				r.Name = strings.Replace(name, str[j], console.FgRed.Sprintf("%s", str[j]), 1)
+				res = append(res, r)
+				break
+			} else if strings.Contains(fmt.Sprintf("%d", process.Pid), str[j]) {
+				r.Pid = strings.Replace(fmt.Sprintf("%d", process.Pid), str[j],
+					console.FgRed.Sprintf("%s", str[j]), 1)
 				res = append(res, r)
 				break
 			}

@@ -39,13 +39,13 @@ func main() {
 
 	switch os.Args[1] {
 	// list all processes
-	case "-l":
+	case "-l", "--list":
 		console.Info(list())
 	// find process by port
-	case "-i":
+	case "-o", "--port":
 		console.Info(findProcessByPort(toInt32(os.Args[2:])...))
 	// find process by pid
-	case "-p":
+	case "-p", "--pid":
 		console.Info(findProcessByPID(toInt32(os.Args[2:])...))
 	default:
 		console.Info(findProcessByString(os.Args[1:]...))

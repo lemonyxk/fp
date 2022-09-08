@@ -12,7 +12,7 @@ package main
 
 func help() string {
 	return `
-Usage: fp -i port1 port2
+Usage: fp -o port1 port2
   -- find process by port number
 
 Usage: fp -l
