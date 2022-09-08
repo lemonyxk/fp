@@ -15,24 +15,9 @@ import (
 	"strconv"
 
 	"github.com/lemonyxk/console"
-	"github.com/shirou/gopsutil/v3/process"
 )
 
 var processes []*P
-
-func init() {
-	console.SetFlags(0)
-	console.Colorful(false)
-
-	ps, err := process.Processes()
-	if err != nil {
-		console.Exit(err)
-	}
-
-	for i := 0; i < len(ps); i++ {
-		processes = append(processes, &P{ps[i]})
-	}
-}
 
 func main() {
 
@@ -40,27 +25,29 @@ func main() {
 		console.Exit(help())
 	}
 
-	var processes Processes
+	initProc()
+
+	var ps Processes
 
 	switch os.Args[1] {
 	// list all processes
 	case "-l", "--list":
-		processes = list()
-		console.Info(processes)
+		ps = list()
+		console.Info(ps)
 		return
 	// find process by port
 	case "-o", "--port":
-		processes = findProcessByPort(toInt32(os.Args[2:])...)
+		ps = findProcessByPort(toInt32(os.Args[2:])...)
 	// find process by pid
 	case "-p", "--pid":
-		processes = findProcessByPID(toInt32(os.Args[2:])...)
+		ps = findProcessByPID(toInt32(os.Args[2:])...)
 	default:
-		processes = findProcessByString(filterArgs()...)
+		ps = findProcessByString(filterArgs()...)
 	}
 
-	console.Info(processes)
+	console.Info(ps)
 
-	if len(processes) == 0 {
+	if len(ps) == 0 {
 		return
 	}
 
@@ -73,7 +60,7 @@ func main() {
 		return
 	}
 
-	kill(processes)
+	kill(ps)
 }
 
 func filterArgs() []string {

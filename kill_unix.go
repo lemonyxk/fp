@@ -1,5 +1,5 @@
-//go:build linux || unix
-// +build linux unix
+//go:build linux || unix || darwin
+// +build linux unix darwin
 
 /**
 * @program: fp

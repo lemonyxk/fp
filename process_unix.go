@@ -1,5 +1,5 @@
-//go:build linux || unix
-// +build linux unix
+//go:build linux || unix || darwin
+// +build linux unix darwin
 
 /**
 * @program: find-process
@@ -28,6 +28,20 @@ type P struct {
 
 func (p *P) Name() (string, error) {
 	return p.Process.Name()
+}
+
+func initProc() {
+	console.SetFlags(0)
+	console.Colorful(false)
+
+	ps, err := process.Processes()
+	if err != nil {
+		console.Exit(err)
+	}
+
+	for i := 0; i < len(ps); i++ {
+		processes = append(processes, &P{ps[i]})
+	}
 }
 
 func findProcessByPort(port ...int32) Processes {
