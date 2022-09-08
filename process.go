@@ -123,7 +123,7 @@ func findProcessByString(str ...string) Processes {
 
 		createTime, err := process.CreateTime()
 		if err != nil {
-			return nil
+			continue
 		}
 
 		var r = Process{
