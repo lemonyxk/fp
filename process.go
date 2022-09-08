@@ -19,7 +19,6 @@ import (
 
 	"github.com/lemonyxk/console"
 	"github.com/lemonyxk/utils/v3"
-	"github.com/shirou/gopsutil/v3/process"
 )
 
 type Process struct {
@@ -27,7 +26,7 @@ type Process struct {
 	Pid        string
 	Port       string
 	CreateTime int64
-	process    *process.Process
+	process    *P
 }
 
 type Processes []Process

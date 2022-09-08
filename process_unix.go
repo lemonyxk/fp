@@ -19,7 +19,16 @@ import (
 	"strings"
 
 	"github.com/lemonyxk/console"
+	"github.com/shirou/gopsutil/v3/process"
 )
+
+type P struct {
+	*process.Process
+}
+
+func (p *P) Name() (string, error) {
+	return p.Process.Name()
+}
 
 func findProcessByPort(port ...int32) Processes {
 	if len(port) == 0 {

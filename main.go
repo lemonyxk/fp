@@ -18,16 +18,19 @@ import (
 	"github.com/shirou/gopsutil/v3/process"
 )
 
-var processes []*process.Process
+var processes []*P
 
 func init() {
 	console.SetFlags(0)
 	console.Colorful(false)
 
-	var err error
-	processes, err = process.Processes()
+	ps, err := process.Processes()
 	if err != nil {
 		console.Exit(err)
+	}
+
+	for i := 0; i < len(ps); i++ {
+		processes = append(processes, &P{ps[i]})
 	}
 }
 
@@ -42,7 +45,9 @@ func main() {
 	switch os.Args[1] {
 	// list all processes
 	case "-l", "--list":
-		console.Info(list())
+		processes = list()
+		console.Info(processes)
+		return
 	// find process by port
 	case "-o", "--port":
 		processes = findProcessByPort(toInt32(os.Args[2:])...)
