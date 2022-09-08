@@ -19,12 +19,14 @@ import (
 
 	"github.com/lemonyxk/console"
 	"github.com/lemonyxk/utils/v3"
+	"github.com/shirou/gopsutil/v3/process"
 )
 
 type Process struct {
 	Name       string
 	Pid        string
 	CreateTime int64
+	process    *process.Process
 }
 
 type Processes []Process
@@ -66,6 +68,7 @@ func list() Processes {
 			Name:       name,
 			Pid:        fmt.Sprintf("%d", process.Pid),
 			CreateTime: createTime / 1000,
+			process:    process,
 		})
 	}
 
@@ -96,6 +99,7 @@ func findProcessByPID(pid ...int32) Processes {
 				Name:       name,
 				Pid:        fmt.Sprintf("%d", process.Pid),
 				CreateTime: createTime / 1000,
+				process:    process,
 			})
 
 			if len(pid) == len(res) {
@@ -130,6 +134,7 @@ func findProcessByString(str ...string) Processes {
 			Name:       name,
 			Pid:        fmt.Sprintf("%d", process.Pid),
 			CreateTime: createTime / 1000,
+			process:    process,
 		}
 
 		for j := 0; j < len(str); j++ {

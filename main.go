@@ -37,19 +37,55 @@ func main() {
 		console.Exit(help())
 	}
 
+	var processes Processes
+
 	switch os.Args[1] {
 	// list all processes
 	case "-l", "--list":
 		console.Info(list())
 	// find process by port
 	case "-o", "--port":
-		console.Info(findProcessByPort(toInt32(os.Args[2:])...))
+		processes = findProcessByPort(toInt32(os.Args[2:])...)
 	// find process by pid
 	case "-p", "--pid":
-		console.Info(findProcessByPID(toInt32(os.Args[2:])...))
+		processes = findProcessByPID(toInt32(os.Args[2:])...)
 	default:
-		console.Info(findProcessByString(os.Args[1:]...))
+		processes = findProcessByString(filterArgs()...)
 	}
+
+	console.Info(processes)
+
+	if len(processes) == 0 {
+		return
+	}
+
+	var k = hasArgs("-k", os.Args)
+	if !k {
+		k = hasArgs("--kill", os.Args)
+	}
+
+	if !k {
+		return
+	}
+
+	kill(processes)
+}
+
+func filterArgs() []string {
+	var index = -1
+	for i := 0; i < len(os.Args); i++ {
+		if os.Args[i] == "-k" || os.Args[i] == "--kill" {
+			index = i
+			break
+		}
+	}
+
+	var args = os.Args
+
+	if index != -1 {
+		args = args[0:index]
+	}
+	return args[1:]
 }
 
 func toInt32(str []string) []int32 {
@@ -68,4 +104,26 @@ func toInt32(str []string) []int32 {
 	}
 
 	return res
+}
+
+func hasArgs(flag string, args []string) bool {
+	for i := 0; i < len(args); i++ {
+		if args[i] == flag {
+			return true
+		}
+	}
+	return false
+}
+
+func getArgs(flag []string, args []string) string {
+	for i := 0; i < len(args); i++ {
+		for j := 0; j < len(flag); j++ {
+			if args[i] == flag[j] {
+				if i+1 < len(args) {
+					return args[i+1]
+				}
+			}
+		}
+	}
+	return ""
 }
