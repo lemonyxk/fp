@@ -1,5 +1,5 @@
-//go:build unix
-// +build unix
+//go:build linux || unix
+// +build linux unix
 
 /**
 * @program: fp
