@@ -45,7 +45,7 @@ func findProcessByPort(port ...int32) Processes {
 		str = strings.TrimRight(str, " ")
 		var findArr = re.Split(str, -1)
 
-		if len(findArr) != 5 {
+		if len(findArr) < 5 {
 			continue
 		}
 
