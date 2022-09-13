@@ -30,6 +30,35 @@ func (p *P) Name() (string, error) {
 	return p.Process.Name()
 }
 
+func getPid(p *process.Process) []int32 {
+
+	var res []int32
+
+	res = append(res, p.Pid)
+
+	for {
+		pp, err := p.Parent()
+		if err != nil {
+			break
+		}
+
+		n, err := p.Name()
+		if err != nil {
+			break
+		}
+
+		if strings.ToUpper(n) == "SUDO" {
+			break
+		}
+
+		res = append(res, pp.Pid)
+
+		p = pp
+	}
+
+	return res
+}
+
 func initProc() {
 	console.SetFlags(0)
 	console.Colorful(false)
@@ -41,6 +70,9 @@ func initProc() {
 
 	for i := 0; i < len(ps); i++ {
 		processes = append(processes, &P{ps[i]})
+		if ps[i].Pid == int32(selfPid) {
+			pidProcess = ps[i]
+		}
 	}
 }
 

@@ -22,6 +22,7 @@ import (
 	"github.com/lemonyxk/console"
 	"github.com/lemonyxk/utils/v3"
 	"github.com/olekukonko/ts"
+	"github.com/shirou/gopsutil/v3/process"
 )
 
 type Process struct {
@@ -34,6 +35,10 @@ type Process struct {
 	UserName   string
 	process    *P
 }
+
+var pidProcess *process.Process
+
+var selfPid = os.Getpid()
 
 type Processes []Process
 
@@ -289,6 +294,13 @@ func findProcessByString(str ...string) Processes {
 				res = append(res, r)
 				break
 			} else if strings.Contains(cmd, str[j]) {
+
+				var pids = getPid(pidProcess)
+
+				if utils.ComparableArray(&pids).Has(process.Pid) {
+					break
+				}
+
 				r.Cmd = cmd
 				un, _ := process.Username()
 

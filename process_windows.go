@@ -28,6 +28,10 @@ type P struct {
 	name string
 }
 
+func getPid(p *process.Process) []int32 {
+	return []int{int32(os.Getpid())}
+}
+
 func (p *P) Name() (string, error) {
 	return p.name, nil
 }
@@ -45,6 +49,9 @@ func initProc() {
 
 	for i := 0; i < len(ps); i++ {
 		processes = append(processes, &P{Process: ps[i], name: m[ps[i].Pid]})
+		if ps[i].Pid == int32(selfPid) {
+			pidProcess = ps[i]
+		}
 	}
 
 }
