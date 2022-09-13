@@ -97,12 +97,14 @@ func (p Processes) String() string {
 		}
 	}
 
-	timeMaxLen += 4
-	pidMaxLen += 4
-	nameMaxLen += 4
-	portMaxLen += 4
-	memMaxLen += 4
-	userMaxLen += 4
+	timeMaxLen += 2
+	pidMaxLen += 2
+	nameMaxLen += 2
+	if portMaxLen > 0 {
+		portMaxLen += 2
+	}
+	memMaxLen += 2
+	userMaxLen += 2
 
 	cmdMaxLen = termWidth - (timeMaxLen + pidMaxLen + nameMaxLen + portMaxLen + memMaxLen + userMaxLen)
 
@@ -110,7 +112,7 @@ func (p Processes) String() string {
 
 	for i := 0; i < len(p); i++ {
 		str += utils.Time.Timestamp(p[i].CreateTime).Format("01-02 15:04:05") +
-			strings.Repeat(" ", 4)
+			strings.Repeat(" ", 2)
 
 		str += p[i].UserName + strings.Repeat(" ", userMaxLen-text.RuneCount(p[i].UserName))
 
@@ -118,13 +120,18 @@ func (p Processes) String() string {
 
 		str += p[i].Mem + strings.Repeat(" ", memMaxLen-text.RuneCount(p[i].Mem))
 
-		str += p[i].Name + strings.Repeat(" ", nameMaxLen-text.RuneCount(p[i].Name))
+		if cmdMaxLen < 0 {
+			nameMaxLen = termWidth - (timeMaxLen + pidMaxLen + portMaxLen + memMaxLen + userMaxLen)
+			str += p[i].Name + strings.Repeat(" ", nameMaxLen-text.RuneCount(p[i].Name))
+		} else {
+			str += p[i].Name + strings.Repeat(" ", nameMaxLen-text.RuneCount(p[i].Name))
+		}
 
 		if p[i].Port != "" {
 			str += p[i].Port + strings.Repeat(" ", portMaxLen-text.RuneCount(p[i].Port))
 		}
 
-		if p[i].Cmd != "" {
+		if p[i].Cmd != "" && cmdMaxLen > 0 {
 			if cmdMaxLen-text.RuneCount(p[i].Cmd) > 0 {
 				str += p[i].Cmd + strings.Repeat(" ", cmdMaxLen-text.RuneCount(p[i].Cmd))
 			} else {
