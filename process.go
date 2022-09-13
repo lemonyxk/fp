@@ -289,7 +289,7 @@ func findProcessByString(str ...string) Processes {
 				res = append(res, r)
 				break
 			} else if strings.Contains(cmd, str[j]) {
-				r.Cmd = strings.Replace(cmd, str[j], console.FgRed.Sprintf("%s", str[j]), 1)
+				r.Cmd = cmd
 				un, _ := process.Username()
 
 				var mStr = ""
