@@ -139,7 +139,9 @@ func (p Processes) String() string {
 			}
 		}
 
-		str += "\n"
+		if i != len(p)-1 {
+			str += "\n"
+		}
 	}
 
 	return str
