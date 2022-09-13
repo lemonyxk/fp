@@ -99,9 +99,7 @@ func (p Processes) String() string {
 	memMaxLen += 4
 	userMaxLen += 4
 
-	if timeMaxLen+pidMaxLen+nameMaxLen+portMaxLen+memMaxLen+cmdMaxLen+userMaxLen > termWidth {
-		cmdMaxLen = termWidth - (timeMaxLen + pidMaxLen + nameMaxLen + portMaxLen + memMaxLen + userMaxLen)
-	}
+	cmdMaxLen = termWidth - (timeMaxLen + pidMaxLen + nameMaxLen + portMaxLen + memMaxLen + userMaxLen)
 
 	var str = ""
 

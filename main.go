@@ -21,19 +21,19 @@ var processes []*P
 
 func main() {
 
-	if len(os.Args) < 2 {
-		console.Exit(help())
-	}
-
 	initProc()
+
+	if len(os.Args) == 1 {
+		console.Info(list())
+		return
+	}
 
 	var ps Processes
 
 	switch os.Args[1] {
 	// list all processes
 	case "-l", "--list":
-		ps = list()
-		console.Info(ps)
+		console.Info(list())
 		return
 	// find process by port
 	case "-o", "--port":
@@ -41,6 +41,9 @@ func main() {
 	// find process by pid
 	case "-p", "--pid":
 		ps = findProcessByPID(toInt32(os.Args[2:])...)
+	case "-h", "--help":
+		console.Info(help())
+		return
 	default:
 		ps = findProcessByString(filterArgs()...)
 	}
