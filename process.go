@@ -111,9 +111,9 @@ func (p Processes) String() string {
 
 		str += p[i].Pid + strings.Repeat(" ", pidMaxLen-text.RuneCount(p[i].Pid))
 
-		str += p[i].Name + strings.Repeat(" ", nameMaxLen-text.RuneCount(p[i].Name))
-
 		str += p[i].Mem + strings.Repeat(" ", memMaxLen-text.RuneCount(p[i].Mem))
+
+		str += p[i].Name + strings.Repeat(" ", nameMaxLen-text.RuneCount(p[i].Name))
 
 		if p[i].Port != "" {
 			str += p[i].Port + strings.Repeat(" ", portMaxLen-text.RuneCount(p[i].Port))
@@ -148,11 +148,25 @@ func list() Processes {
 			continue
 		}
 
+		cmd, _ := process.Cmdline()
+		var mStr = ""
+		mem, err := process.MemoryInfo()
+		if err != nil {
+			mStr = "deny"
+		} else {
+			mStr = size(int64(mem.RSS))
+		}
+
+		un, _ := process.Username()
+
 		res = append(res, Process{
 			Name:       name,
 			Pid:        fmt.Sprintf("%d", process.Pid),
 			CreateTime: createTime / 1000,
 			process:    process,
+			Cmd:        cmd,
+			Mem:        mStr,
+			UserName:   un,
 		})
 	}
 
@@ -236,9 +250,11 @@ func findProcessByString(str ...string) Processes {
 		}
 
 		for j := 0; j < len(str); j++ {
+
+			cmd, _ := process.Cmdline()
+
 			if strings.Contains(name, str[j]) {
 				r.Name = strings.Replace(name, str[j], console.FgRed.Sprintf("%s", str[j]), 1)
-				cmd, _ := process.Cmdline()
 				un, _ := process.Username()
 
 				var mStr = ""
@@ -257,7 +273,23 @@ func findProcessByString(str ...string) Processes {
 			} else if strings.Contains(fmt.Sprintf("%d", process.Pid), str[j]) {
 				r.Pid = strings.Replace(fmt.Sprintf("%d", process.Pid), str[j],
 					console.FgRed.Sprintf("%s", str[j]), 1)
-				cmd, _ := process.Cmdline()
+				un, _ := process.Username()
+
+				var mStr = ""
+				mem, err := process.MemoryInfo()
+				if err != nil {
+					mStr = "deny"
+				} else {
+					mStr = size(int64(mem.RSS))
+				}
+
+				r.Cmd = cmd
+				r.Mem = mStr
+				r.UserName = un
+				res = append(res, r)
+				break
+			} else if strings.Contains(cmd, str[j]) {
+				r.Name = strings.Replace(cmd, str[j], console.FgRed.Sprintf("%s", str[j]), 1)
 				un, _ := process.Username()
 
 				var mStr = ""
