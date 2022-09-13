@@ -15,6 +15,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -29,7 +30,7 @@ type P struct {
 }
 
 func getPid(p *process.Process) []int32 {
-	return []int{int32(os.Getpid())}
+	return []int32{int32(os.Getpid())}
 }
 
 func (p *P) Name() (string, error) {
