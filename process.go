@@ -31,6 +31,7 @@ type Process struct {
 	CreateTime int64
 	Cmd        string
 	Mem        string
+	UserName   string
 	process    *P
 }
 
@@ -53,6 +54,7 @@ func (p Processes) String() string {
 
 	var timeMaxLen = text.RuneCount(now)
 	var pidMaxLen = 0
+	var userMaxLen = 0
 	var nameMaxLen = 0
 	var portMaxLen = 0
 	var memMaxLen = 0
@@ -62,6 +64,11 @@ func (p Processes) String() string {
 		var px = text.RuneCount(p[i].Pid)
 		if px > pidMaxLen {
 			pidMaxLen = px
+		}
+
+		var ux = text.RuneCount(p[i].UserName)
+		if ux > userMaxLen {
+			userMaxLen = ux
 		}
 
 		var nx = text.RuneCount(p[i].Name)
@@ -90,9 +97,10 @@ func (p Processes) String() string {
 	nameMaxLen += 4
 	portMaxLen += 4
 	memMaxLen += 4
+	userMaxLen += 4
 
-	if timeMaxLen+pidMaxLen+nameMaxLen+portMaxLen+memMaxLen+cmdMaxLen > termWidth {
-		cmdMaxLen = termWidth - (timeMaxLen + pidMaxLen + nameMaxLen + portMaxLen + memMaxLen)
+	if timeMaxLen+pidMaxLen+nameMaxLen+portMaxLen+memMaxLen+cmdMaxLen+userMaxLen > termWidth {
+		cmdMaxLen = termWidth - (timeMaxLen + pidMaxLen + nameMaxLen + portMaxLen + memMaxLen + userMaxLen)
 	}
 
 	var str = ""
@@ -100,6 +108,8 @@ func (p Processes) String() string {
 	for i := 0; i < len(p); i++ {
 		str += utils.Time.Timestamp(p[i].CreateTime).Format("01-02 15:04:05") +
 			strings.Repeat(" ", 4)
+
+		str += p[i].UserName + strings.Repeat(" ", userMaxLen-text.RuneCount(p[i].UserName))
 
 		str += p[i].Pid + strings.Repeat(" ", pidMaxLen-text.RuneCount(p[i].Pid))
 
@@ -172,7 +182,15 @@ func findProcessByPID(pid ...int32) Processes {
 			}
 
 			cmd, _ := process.Cmdline()
-			mem, _ := process.MemoryInfo()
+			var mStr = ""
+			mem, err := process.MemoryInfo()
+			if err != nil {
+				mStr = "deny"
+			} else {
+				mStr = size(int64(mem.RSS))
+			}
+
+			un, _ := process.Username()
 
 			res = append(res, Process{
 				Name:       name,
@@ -180,7 +198,8 @@ func findProcessByPID(pid ...int32) Processes {
 				CreateTime: createTime / 1000,
 				process:    process,
 				Cmd:        cmd,
-				Mem:        size(int64(mem.RSS)),
+				Mem:        mStr,
+				UserName:   un,
 			})
 
 			if len(pid) == len(res) {
@@ -222,18 +241,38 @@ func findProcessByString(str ...string) Processes {
 			if strings.Contains(name, str[j]) {
 				r.Name = strings.Replace(name, str[j], console.FgRed.Sprintf("%s", str[j]), 1)
 				cmd, _ := process.Cmdline()
-				mem, _ := process.MemoryInfo()
+				un, _ := process.Username()
+
+				var mStr = ""
+				mem, err := process.MemoryInfo()
+				if err != nil {
+					mStr = "deny"
+				} else {
+					mStr = size(int64(mem.RSS))
+				}
+
 				r.Cmd = cmd
-				r.Mem = size(int64(mem.RSS))
+				r.Mem = mStr
+				r.UserName = un
 				res = append(res, r)
 				break
 			} else if strings.Contains(fmt.Sprintf("%d", process.Pid), str[j]) {
 				r.Pid = strings.Replace(fmt.Sprintf("%d", process.Pid), str[j],
 					console.FgRed.Sprintf("%s", str[j]), 1)
 				cmd, _ := process.Cmdline()
-				mem, _ := process.MemoryInfo()
+				un, _ := process.Username()
+
+				var mStr = ""
+				mem, err := process.MemoryInfo()
+				if err != nil {
+					mStr = "deny"
+				} else {
+					mStr = size(int64(mem.RSS))
+				}
+
 				r.Cmd = cmd
-				r.Mem = size(int64(mem.RSS))
+				r.Mem = mStr
+				r.UserName = un
 				res = append(res, r)
 				break
 			}
