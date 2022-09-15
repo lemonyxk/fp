@@ -23,7 +23,7 @@ import (
 var netMap = make(map[int]int)
 
 func initPortMap() {
-	var str, err = execCmd("netstat", "-navp")
+	var str, err = execCmd("netstat", "-nap")
 	if err != nil {
 		console.Exit(err)
 	}
