@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"regexp"
 	"strings"
 	"time"
 
@@ -157,10 +158,7 @@ func list() Processes {
 			continue
 		}
 
-		createTime, err := process.CreateTime()
-		if err != nil {
-			continue
-		}
+		createTime, _ := process.CreateTime()
 
 		cmd, _ := process.Cmdline()
 		var mStr = ""
@@ -202,10 +200,7 @@ func findProcessByPID(pid ...int32) Processes {
 				return nil
 			}
 
-			createTime, err := process.CreateTime()
-			if err != nil {
-				return nil
-			}
+			createTime, _ := process.CreateTime()
 
 			cmd, _ := process.Cmdline()
 			var mStr = ""
@@ -251,10 +246,7 @@ func findProcessByString(str ...string) Processes {
 			continue
 		}
 
-		createTime, err := process.CreateTime()
-		if err != nil {
-			continue
-		}
+		createTime, _ := process.CreateTime()
 
 		var r = Process{
 			Name:       name,
@@ -349,6 +341,37 @@ func execCmd(c string, args ...string) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+func findProcessByPort(port ...int32) Processes {
+	if len(port) == 0 {
+		return nil
+	}
+
+	var processes Processes
+
+	for i := 0; i < len(port); i++ {
+
+		var intP, ok = netMap[int(port[i])]
+		if !ok {
+			continue
+		}
+
+		var p = findProcessByPID(int32(intP))
+		if len(p) == 0 {
+			continue
+		}
+
+		for k := 0; k < len(p); k++ {
+			p[k].Port = console.FgRed.Sprintf("%d", port[i])
+			p[k].Pid = fmt.Sprintf("%d", p[k].process.Pid)
+		}
+
+		processes = append(processes, p...)
+
+	}
+
+	return processes
+}
+
 func size(i int64) string {
 
 	var s = float64(i)
@@ -358,4 +381,48 @@ func size(i int64) string {
 	}
 
 	return fmt.Sprintf("%.1fMB", s/1024/1024)
+}
+
+var re = regexp.MustCompile(`\s+`)
+
+func getArrFromLineStr(str string, find, filter []string) [][]string {
+	var res [][]string
+	var arr = strings.Split(str, "\n")
+	for i := 0; i < len(arr); i++ {
+
+		var s = arr[i]
+		s = strings.TrimLeft(s, " ")
+		s = strings.TrimRight(s, " ")
+
+		var fi = true
+		for j := 0; j < len(filter); j++ {
+			if strings.Contains(s, filter[j]) {
+				fi = false
+				break
+			}
+		}
+
+		if !fi {
+			continue
+		}
+
+		if len(find) == 0 {
+			res = append(res, re.Split(s, -1))
+			break
+		}
+
+		var f = true
+		for j := 0; j < len(find); j++ {
+			if !strings.Contains(s, find[j]) {
+				f = false
+				break
+			}
+		}
+
+		if f {
+			res = append(res, re.Split(s, -1))
+		}
+	}
+
+	return res
 }

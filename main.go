@@ -23,6 +23,8 @@ func main() {
 
 	initProc()
 
+	initPortMap()
+
 	if len(os.Args) == 1 {
 		console.Info(list())
 		return
