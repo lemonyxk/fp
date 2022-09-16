@@ -16,6 +16,7 @@ package main
 import (
 	"strconv"
 	"strings"
+	"syscall"
 
 	"github.com/lemonyxk/console"
 )
@@ -37,4 +38,16 @@ func initPortMap() {
 		var p, _ = strconv.Atoi(res[i][6][:strings.Index(res[i][6], "/")])
 		netMap[o] = p
 	}
+}
+
+func getGroupID(p *P) int {
+	var g, err = syscall.Getpgid(int32(p.Pid))
+	if err != nil {
+		return syscall.Getppid()
+	}
+	return g
+}
+
+func shortName(name string) string {
+	return name
 }

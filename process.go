@@ -17,7 +17,6 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/lemonyxk/console"
@@ -34,6 +33,7 @@ type Process struct {
 	Cmd        string
 	Mem        string
 	UserName   string
+	GroupID    string
 	process    *P
 }
 
@@ -56,9 +56,11 @@ func (p Processes) String() string {
 
 	var termWidth = size.Col()
 
-	var now = time.Now().Format("01-02 15:04:05")
+	// var now = time.Now().Format("01-02 15:04:05")
 
-	var timeMaxLen = text.RuneCount(now)
+	// var timeMaxLen = text.RuneCount(now)
+
+	var gidMaxLen = 0
 	var pidMaxLen = 0
 	var userMaxLen = 0
 	var nameMaxLen = 0
@@ -70,6 +72,11 @@ func (p Processes) String() string {
 		var px = text.RuneCount(p[i].Pid)
 		if px > pidMaxLen {
 			pidMaxLen = px
+		}
+
+		var gx = text.RuneCount(p[i].GroupID)
+		if gx > gidMaxLen {
+			gidMaxLen = gx
 		}
 
 		var ux = text.RuneCount(p[i].UserName)
@@ -98,7 +105,7 @@ func (p Processes) String() string {
 		}
 	}
 
-	timeMaxLen += 2
+	gidMaxLen += 2
 	pidMaxLen += 2
 	nameMaxLen += 2
 	if portMaxLen > 0 {
@@ -107,22 +114,24 @@ func (p Processes) String() string {
 	memMaxLen += 2
 	userMaxLen += 2
 
-	cmdMaxLen = termWidth - (timeMaxLen + pidMaxLen + nameMaxLen + portMaxLen + memMaxLen + userMaxLen)
+	cmdMaxLen = termWidth - (gidMaxLen + pidMaxLen + nameMaxLen + portMaxLen + memMaxLen + userMaxLen)
 
 	var str = ""
 
 	for i := 0; i < len(p); i++ {
-		str += utils.Time.Timestamp(p[i].CreateTime).Format("01-02 15:04:05") +
-			strings.Repeat(" ", 2)
-
-		str += p[i].UserName + strings.Repeat(" ", userMaxLen-text.RuneCount(p[i].UserName))
+		// str += utils.Time.Timestamp(p[i].CreateTime).Format("01-02 15:04:05") +
+		// 	strings.Repeat(" ", 2)
 
 		str += p[i].Pid + strings.Repeat(" ", pidMaxLen-text.RuneCount(p[i].Pid))
 
+		str += p[i].GroupID + strings.Repeat(" ", gidMaxLen-text.RuneCount(p[i].GroupID))
+
 		str += p[i].Mem + strings.Repeat(" ", memMaxLen-text.RuneCount(p[i].Mem))
 
+		str += p[i].UserName + strings.Repeat(" ", userMaxLen-text.RuneCount(p[i].UserName))
+
 		if cmdMaxLen < 0 {
-			nameMaxLen = termWidth - (timeMaxLen + pidMaxLen + portMaxLen + memMaxLen + userMaxLen)
+			nameMaxLen = termWidth - (gidMaxLen + pidMaxLen + portMaxLen + memMaxLen + userMaxLen)
 			str += p[i].Name + strings.Repeat(" ", nameMaxLen-text.RuneCount(p[i].Name))
 		} else {
 			str += p[i].Name + strings.Repeat(" ", nameMaxLen-text.RuneCount(p[i].Name))
@@ -133,10 +142,11 @@ func (p Processes) String() string {
 		}
 
 		if p[i].Cmd != "" && cmdMaxLen > 0 {
-			if cmdMaxLen-text.RuneCount(p[i].Cmd) > 0 {
-				str += p[i].Cmd + strings.Repeat(" ", cmdMaxLen-text.RuneCount(p[i].Cmd))
+			var cll = text.RuneCount(p[i].Cmd)
+			if cmdMaxLen-cll > 0 {
+				str += p[i].Cmd + strings.Repeat(" ", cmdMaxLen-cll)
 			} else {
-				str += p[i].Cmd[:cmdMaxLen-3] + "..."
+				str += "..." + p[i].Cmd[cll-cmdMaxLen+4:]
 			}
 		}
 
@@ -151,11 +161,24 @@ func (p Processes) String() string {
 
 func list() Processes {
 	var res []Process
+	var all = false
+	if hasArgs("-a") {
+		all = true
+	}
 	for i := 0; i < len(processes); i++ {
 		var process = processes[i]
 		var name, err = process.Name()
 		if err != nil {
 			continue
+		}
+
+		un, _ := process.Username()
+		un = shortName(un)
+
+		if !all {
+			if strings.HasPrefix(un, "_") {
+				continue
+			}
 		}
 
 		createTime, _ := process.CreateTime()
@@ -169,8 +192,6 @@ func list() Processes {
 			mStr = size(int64(mem.RSS))
 		}
 
-		un, _ := process.Username()
-
 		res = append(res, Process{
 			Name:       name,
 			Pid:        fmt.Sprintf("%d", process.Pid),
@@ -179,6 +200,7 @@ func list() Processes {
 			Cmd:        cmd,
 			Mem:        mStr,
 			UserName:   un,
+			GroupID:    fmt.Sprintf("%d", getGroupID(process)),
 		})
 	}
 
@@ -212,6 +234,7 @@ func findProcessByPID(pid ...int32) Processes {
 			}
 
 			un, _ := process.Username()
+			un = shortName(un)
 
 			res = append(res, Process{
 				Name:       name,
@@ -221,6 +244,7 @@ func findProcessByPID(pid ...int32) Processes {
 				Cmd:        cmd,
 				Mem:        mStr,
 				UserName:   un,
+				GroupID:    fmt.Sprintf("%d", getGroupID(process)),
 			})
 
 			if len(pid) == len(res) {
@@ -262,6 +286,7 @@ func findProcessByString(str ...string) Processes {
 			if strings.Contains(name, str[j]) {
 				r.Name = strings.Replace(name, str[j], console.FgRed.Sprintf("%s", str[j]), 1)
 				un, _ := process.Username()
+				un = shortName(un)
 
 				var mStr = ""
 				mem, err := process.MemoryInfo()
@@ -270,7 +295,7 @@ func findProcessByString(str ...string) Processes {
 				} else {
 					mStr = size(int64(mem.RSS))
 				}
-
+				r.GroupID = fmt.Sprintf("%d", getGroupID(process))
 				r.Cmd = cmd
 				r.Mem = mStr
 				r.UserName = un
@@ -280,6 +305,7 @@ func findProcessByString(str ...string) Processes {
 				r.Pid = strings.Replace(fmt.Sprintf("%d", process.Pid), str[j],
 					console.FgRed.Sprintf("%s", str[j]), 1)
 				un, _ := process.Username()
+				un = shortName(un)
 
 				var mStr = ""
 				mem, err := process.MemoryInfo()
@@ -288,7 +314,7 @@ func findProcessByString(str ...string) Processes {
 				} else {
 					mStr = size(int64(mem.RSS))
 				}
-
+				r.GroupID = fmt.Sprintf("%d", getGroupID(process))
 				r.Cmd = cmd
 				r.Mem = mStr
 				r.UserName = un
@@ -304,6 +330,7 @@ func findProcessByString(str ...string) Processes {
 
 				r.Cmd = cmd
 				un, _ := process.Username()
+				un = shortName(un)
 
 				var mStr = ""
 				mem, err := process.MemoryInfo()
@@ -313,6 +340,7 @@ func findProcessByString(str ...string) Processes {
 					mStr = size(int64(mem.RSS))
 				}
 
+				r.GroupID = fmt.Sprintf("%d", getGroupID(process))
 				r.Mem = mStr
 				r.UserName = un
 				res = append(res, r)

@@ -15,7 +15,6 @@ package main
 
 import (
 	"context"
-	"os"
 	"strconv"
 	"syscall"
 
@@ -24,7 +23,7 @@ import (
 
 func kill(processes Processes) {
 
-	var killValue = getArgs([]string{"-k", "--kill"}, os.Args)
+	var killValue = getArgs([]string{"-k", "--kill"})
 
 	if killValue == "" {
 		killValue = "15"

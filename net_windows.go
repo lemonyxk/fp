@@ -14,6 +14,7 @@
 package main
 
 import (
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -37,4 +38,17 @@ func initPortMap() {
 		var p, _ = strconv.Atoi(res[i][4])
 		netMap[o] = p
 	}
+}
+
+func getGroupID(p *P) int {
+	var r, _ = p.Ppid()
+	return int(r)
+}
+
+func shortName(name string) string {
+	var s = filepath.Base(name)
+	if s == "." {
+		return "deny"
+	}
+	return s
 }

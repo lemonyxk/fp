@@ -34,7 +34,7 @@ func main() {
 
 	switch os.Args[1] {
 	// list all processes
-	case "-l", "--list":
+	case "-a":
 		console.Info(list())
 		return
 	// find process by port
@@ -56,9 +56,9 @@ func main() {
 		return
 	}
 
-	var k = hasArgs("-k", os.Args)
+	var k = hasArgs("-k")
 	if !k {
-		k = hasArgs("--kill", os.Args)
+		k = hasArgs("--kill")
 	}
 
 	if !k {
@@ -103,7 +103,8 @@ func toInt32(str []string) []int32 {
 	return res
 }
 
-func hasArgs(flag string, args []string) bool {
+func hasArgs(flag string) bool {
+	var args = os.Args
 	for i := 0; i < len(args); i++ {
 		if args[i] == flag {
 			return true
@@ -112,7 +113,8 @@ func hasArgs(flag string, args []string) bool {
 	return false
 }
 
-func getArgs(flag []string, args []string) string {
+func getArgs(flag []string) string {
+	var args = os.Args
 	for i := 0; i < len(args); i++ {
 		for j := 0; j < len(flag); j++ {
 			if args[i] == flag[j] {
