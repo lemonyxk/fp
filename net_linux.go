@@ -41,7 +41,7 @@ func initPortMap() {
 }
 
 func getGroupID(p *P) int {
-	var g, err = syscall.Getpgid(int32(p.Pid))
+	var g, err = syscall.Getpgid(int(p.Pid))
 	if err != nil {
 		return syscall.Getppid()
 	}
