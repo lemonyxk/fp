@@ -105,7 +105,9 @@ func (p Processes) String() string {
 		}
 	}
 
-	gidMaxLen += 2
+	if gidMaxLen > 0 {
+		gidMaxLen += 2
+	}
 	pidMaxLen += 2
 	nameMaxLen += 2
 	if portMaxLen > 0 {
@@ -124,7 +126,9 @@ func (p Processes) String() string {
 
 		str += p[i].Pid + strings.Repeat(" ", pidMaxLen-text.RuneCount(p[i].Pid))
 
-		str += p[i].GroupID + strings.Repeat(" ", gidMaxLen-text.RuneCount(p[i].GroupID))
+		if p[i].GroupID != "" {
+			str += p[i].GroupID + strings.Repeat(" ", gidMaxLen-text.RuneCount(p[i].GroupID))
+		}
 
 		str += p[i].Mem + strings.Repeat(" ", memMaxLen-text.RuneCount(p[i].Mem))
 
@@ -192,6 +196,12 @@ func list() Processes {
 			mStr = size(int64(mem.RSS))
 		}
 
+		var gid = getGroupID(process)
+		var gidStr = fmt.Sprintf("%d", gid)
+		if gid == -1 {
+			gidStr = ""
+		}
+
 		res = append(res, Process{
 			Name:       name,
 			Pid:        fmt.Sprintf("%d", process.Pid),
@@ -200,7 +210,7 @@ func list() Processes {
 			Cmd:        cmd,
 			Mem:        mStr,
 			UserName:   un,
-			GroupID:    fmt.Sprintf("%d", getGroupID(process)),
+			GroupID:    gidStr,
 		})
 	}
 
@@ -236,6 +246,12 @@ func findProcessByPID(pid ...int32) Processes {
 			un, _ := process.Username()
 			un = shortName(un)
 
+			var gid = getGroupID(process)
+			var gidStr = fmt.Sprintf("%d", gid)
+			if gid == -1 {
+				gidStr = ""
+			}
+
 			res = append(res, Process{
 				Name:       name,
 				Pid:        console.FgRed.Sprintf("%d", process.Pid),
@@ -244,7 +260,7 @@ func findProcessByPID(pid ...int32) Processes {
 				Cmd:        cmd,
 				Mem:        mStr,
 				UserName:   un,
-				GroupID:    fmt.Sprintf("%d", getGroupID(process)),
+				GroupID:    gidStr,
 			})
 
 			if len(pid) == len(res) {
@@ -295,7 +311,12 @@ func findProcessByString(str ...string) Processes {
 				} else {
 					mStr = size(int64(mem.RSS))
 				}
-				r.GroupID = fmt.Sprintf("%d", getGroupID(process))
+				var gid = getGroupID(process)
+				var gidStr = fmt.Sprintf("%d", gid)
+				if gid == -1 {
+					gidStr = ""
+				}
+				r.GroupID = gidStr
 				r.Cmd = cmd
 				r.Mem = mStr
 				r.UserName = un
@@ -314,7 +335,12 @@ func findProcessByString(str ...string) Processes {
 				} else {
 					mStr = size(int64(mem.RSS))
 				}
-				r.GroupID = fmt.Sprintf("%d", getGroupID(process))
+				var gid = getGroupID(process)
+				var gidStr = fmt.Sprintf("%d", gid)
+				if gid == -1 {
+					gidStr = ""
+				}
+				r.GroupID = gidStr
 				r.Cmd = cmd
 				r.Mem = mStr
 				r.UserName = un
@@ -339,8 +365,12 @@ func findProcessByString(str ...string) Processes {
 				} else {
 					mStr = size(int64(mem.RSS))
 				}
-
-				r.GroupID = fmt.Sprintf("%d", getGroupID(process))
+				var gid = getGroupID(process)
+				var gidStr = fmt.Sprintf("%d", gid)
+				if gid == -1 {
+					gidStr = ""
+				}
+				r.GroupID = gidStr
 				r.Mem = mStr
 				r.UserName = un
 				res = append(res, r)

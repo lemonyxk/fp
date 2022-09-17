@@ -41,8 +41,9 @@ func initPortMap() {
 }
 
 func getGroupID(p *P) int {
-	var r, _ = p.Ppid()
-	return int(r)
+	// var r, _ = p.Ppid()
+	// return int(r)
+	return -1
 }
 
 func shortName(name string) string {
