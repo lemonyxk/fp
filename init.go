@@ -28,6 +28,14 @@ func (p *P) Name() (string, error) {
 	return p.Process.Name()
 }
 
+func (p *P) UserName() (string, error) {
+	return p.Process.Username()
+}
+
+func (p *P) CmdLine() (string, error) {
+	return p.Process.Cmdline()
+}
+
 func getPid(p *process.Process) []int32 {
 
 	var res []int32

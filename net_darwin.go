@@ -47,7 +47,3 @@ func getGroupID(p *P) int {
 	}
 	return g
 }
-
-func shortName(name string) string {
-	return name
-}

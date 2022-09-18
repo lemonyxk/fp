@@ -34,7 +34,10 @@ type Process struct {
 	Mem        string
 	UserName   string
 	GroupID    string
-	process    *P
+
+	process   *P
+	isColored bool
+	colorStr  string
 }
 
 var pidProcess *process.Process
@@ -46,8 +49,11 @@ type Processes []Process
 func (p Processes) String() string {
 
 	if len(p) == 0 {
-		return "No results"
+		return ""
 	}
+
+	var all = hasArgs("-a")
+	var cmd = hasArgs("-c")
 
 	var size, err = ts.GetSize()
 	if err != nil {
@@ -121,42 +127,92 @@ func (p Processes) String() string {
 	var str = ""
 
 	for i := 0; i < len(p); i++ {
+		if !all {
+			if strings.HasPrefix(p[i].UserName, "_") {
+				continue
+			}
+		}
+
+		var add = ""
+
 		// str += utils.Time.Timestamp(p[i].CreateTime).Format("01-02 15:04:05") +
 		// 	strings.Repeat(" ", 2)
 
-		str += p[i].Pid + strings.Repeat(" ", pidMaxLen-text.RuneCount(p[i].Pid))
+		add += p[i].Pid + strings.Repeat(" ", pidMaxLen-text.RuneCount(p[i].Pid))
 
 		if p[i].GroupID != "" {
-			str += p[i].GroupID + strings.Repeat(" ", gidMaxLen-text.RuneCount(p[i].GroupID))
+			add += p[i].GroupID + strings.Repeat(" ", gidMaxLen-text.RuneCount(p[i].GroupID))
 		}
 
-		str += p[i].Mem + strings.Repeat(" ", memMaxLen-text.RuneCount(p[i].Mem))
+		add += p[i].Mem + strings.Repeat(" ", memMaxLen-text.RuneCount(p[i].Mem))
 
-		str += p[i].UserName + strings.Repeat(" ", userMaxLen-text.RuneCount(p[i].UserName))
+		add += p[i].UserName + strings.Repeat(" ", userMaxLen-text.RuneCount(p[i].UserName))
 
 		if cmdMaxLen < 0 {
 			nameMaxLen = termWidth - (gidMaxLen + pidMaxLen + portMaxLen + memMaxLen + userMaxLen)
-			str += p[i].Name + strings.Repeat(" ", nameMaxLen-text.RuneCount(p[i].Name))
+			add += p[i].Name + strings.Repeat(" ", nameMaxLen-text.RuneCount(p[i].Name))
 		} else {
-			str += p[i].Name + strings.Repeat(" ", nameMaxLen-text.RuneCount(p[i].Name))
+			add += p[i].Name + strings.Repeat(" ", nameMaxLen-text.RuneCount(p[i].Name))
 		}
 
 		if p[i].Port != "" {
-			str += p[i].Port + strings.Repeat(" ", portMaxLen-text.RuneCount(p[i].Port))
+			add += p[i].Port + strings.Repeat(" ", portMaxLen-text.RuneCount(p[i].Port))
 		}
 
 		if p[i].Cmd != "" && cmdMaxLen > 0 {
 			var cll = text.RuneCount(p[i].Cmd)
 			if cmdMaxLen-cll > 0 {
-				str += p[i].Cmd + strings.Repeat(" ", cmdMaxLen-cll)
+				add += p[i].Cmd + strings.Repeat(" ", cmdMaxLen-cll)
 			} else {
-				str += "..." + p[i].Cmd[cll-cmdMaxLen+4:]
+				if cmd {
+					var index = 0
+					var s []rune
+					for {
+						s = append(s, rune(p[i].Cmd[index]))
+						if text.RuneCount(string(s)) >= cmdMaxLen {
+							add += string(s) + "\n"
+							add += strings.Repeat(" ", termWidth-cmdMaxLen)
+							s = []rune{}
+						}
+						index++
+						if index >= len(p[i].Cmd) {
+							if len(s) != 0 {
+								add += string(s)
+							}
+							break
+						}
+					}
+				} else {
+					var index = 0
+					var l = len(p[i].Cmd)
+					var s []rune
+					for {
+						s = append([]rune{rune(p[i].Cmd[l-index-1])}, s...)
+						if text.RuneCount(string(s)) >= cmdMaxLen {
+							add += string(s)
+							break
+						}
+						index++
+						if index >= len(p[i].Cmd) {
+							if len(s) != 0 {
+								add += string(s)
+							}
+							break
+						}
+					}
+				}
 			}
 		}
 
 		if i != len(p)-1 {
-			str += "\n"
+			add += "\n"
 		}
+
+		if p[i].isColored {
+			add = strings.ReplaceAll(add, p[i].colorStr, console.FgRed.Sprint(p[i].colorStr))
+		}
+
+		str += add
 	}
 
 	return str
@@ -165,53 +221,13 @@ func (p Processes) String() string {
 
 func list() Processes {
 	var res []Process
-	var all = false
-	if hasArgs("-a") {
-		all = true
-	}
 	for i := 0; i < len(processes); i++ {
-		var process = processes[i]
-		var name, err = process.Name()
+		var p = processes[i]
+		var r, err = makeRes(p)
 		if err != nil {
 			continue
 		}
-
-		un, _ := process.Username()
-		un = shortName(un)
-
-		if !all {
-			if strings.HasPrefix(un, "_") {
-				continue
-			}
-		}
-
-		createTime, _ := process.CreateTime()
-
-		cmd, _ := process.Cmdline()
-		var mStr = ""
-		mem, err := process.MemoryInfo()
-		if err != nil {
-			mStr = "deny"
-		} else {
-			mStr = size(int64(mem.RSS))
-		}
-
-		var gid = getGroupID(process)
-		var gidStr = fmt.Sprintf("%d", gid)
-		if gid == -1 {
-			gidStr = ""
-		}
-
-		res = append(res, Process{
-			Name:       name,
-			Pid:        fmt.Sprintf("%d", process.Pid),
-			CreateTime: createTime / 1000,
-			process:    process,
-			Cmd:        cmd,
-			Mem:        mStr,
-			UserName:   un,
-			GroupID:    gidStr,
-		})
+		res = append(res, r)
 	}
 
 	return res
@@ -225,43 +241,18 @@ func findProcessByPID(pid ...int32) Processes {
 
 	var res []Process
 	for i := 0; i < len(processes); i++ {
-		var process = processes[i]
-		if utils.ComparableArray(&pid).Has(process.Pid) {
-			var name, err = process.Name()
+		var p = processes[i]
+		if utils.ComparableArray(&pid).Has(p.Pid) {
+
+			var r, err = makeRes(p)
 			if err != nil {
 				return nil
 			}
 
-			createTime, _ := process.CreateTime()
+			r.isColored = true
+			r.colorStr = r.Pid
 
-			cmd, _ := process.Cmdline()
-			var mStr = ""
-			mem, err := process.MemoryInfo()
-			if err != nil {
-				mStr = "deny"
-			} else {
-				mStr = size(int64(mem.RSS))
-			}
-
-			un, _ := process.Username()
-			un = shortName(un)
-
-			var gid = getGroupID(process)
-			var gidStr = fmt.Sprintf("%d", gid)
-			if gid == -1 {
-				gidStr = ""
-			}
-
-			res = append(res, Process{
-				Name:       name,
-				Pid:        console.FgRed.Sprintf("%d", process.Pid),
-				CreateTime: createTime / 1000,
-				process:    process,
-				Cmd:        cmd,
-				Mem:        mStr,
-				UserName:   un,
-				GroupID:    gidStr,
-			})
+			res = append(res, r)
 
 			if len(pid) == len(res) {
 				return res
@@ -280,99 +271,32 @@ func findProcessByString(str ...string) Processes {
 
 	var res []Process
 	for i := 0; i < len(processes); i++ {
-		var process = processes[i]
-		var name, err = process.Name()
+		var p = processes[i]
+
+		var r, err = makeRes(p)
 		if err != nil {
 			continue
 		}
 
-		createTime, _ := process.CreateTime()
-
-		var r = Process{
-			Name:       name,
-			Pid:        fmt.Sprintf("%d", process.Pid),
-			CreateTime: createTime / 1000,
-			process:    process,
-		}
-
 		for j := 0; j < len(str); j++ {
 
-			cmd, _ := process.Cmdline()
-
-			if strings.Contains(name, str[j]) {
-				r.Name = strings.Replace(name, str[j], console.FgRed.Sprintf("%s", str[j]), 1)
-				un, _ := process.Username()
-				un = shortName(un)
-
-				var mStr = ""
-				mem, err := process.MemoryInfo()
-				if err != nil {
-					mStr = "deny"
-				} else {
-					mStr = size(int64(mem.RSS))
-				}
-				var gid = getGroupID(process)
-				var gidStr = fmt.Sprintf("%d", gid)
-				if gid == -1 {
-					gidStr = ""
-				}
-				r.GroupID = gidStr
-				r.Cmd = cmd
-				r.Mem = mStr
-				r.UserName = un
+			if strings.Contains(r.Name, str[j]) {
+				r.isColored = true
+				r.colorStr = str[j]
 				res = append(res, r)
 				break
-			} else if strings.Contains(fmt.Sprintf("%d", process.Pid), str[j]) {
-				r.Pid = strings.Replace(fmt.Sprintf("%d", process.Pid), str[j],
-					console.FgRed.Sprintf("%s", str[j]), 1)
-				un, _ := process.Username()
-				un = shortName(un)
-
-				var mStr = ""
-				mem, err := process.MemoryInfo()
-				if err != nil {
-					mStr = "deny"
-				} else {
-					mStr = size(int64(mem.RSS))
-				}
-				var gid = getGroupID(process)
-				var gidStr = fmt.Sprintf("%d", gid)
-				if gid == -1 {
-					gidStr = ""
-				}
-				r.GroupID = gidStr
-				r.Cmd = cmd
-				r.Mem = mStr
-				r.UserName = un
+			} else if strings.Contains(r.Pid, str[j]) {
+				r.isColored = true
+				r.colorStr = str[j]
 				res = append(res, r)
 				break
-			} else if strings.Contains(cmd, str[j]) {
-
-				var pids = getPid(pidProcess)
-
-				if utils.ComparableArray(&pids).Has(process.Pid) {
+			} else if strings.Contains(r.Cmd, str[j]) {
+				var pidS = getPid(pidProcess)
+				if utils.ComparableArray(&pidS).Has(p.Pid) {
 					break
 				}
-
-				r.Cmd = cmd
-				un, _ := process.Username()
-				un = shortName(un)
-
-				var mStr = ""
-				mem, err := process.MemoryInfo()
-				if err != nil {
-					mStr = "deny"
-				} else {
-					mStr = size(int64(mem.RSS))
-				}
-				var gid = getGroupID(process)
-				var gidStr = fmt.Sprintf("%d", gid)
-				if gid == -1 {
-					gidStr = ""
-				}
-				r.GroupID = gidStr
-				r.Mem = mStr
-				r.UserName = un
+				r.isColored = true
+				r.colorStr = str[j]
 				res = append(res, r)
 				break
 			}
@@ -380,6 +304,45 @@ func findProcessByString(str ...string) Processes {
 	}
 
 	return res
+}
+
+func makeRes(p *P) (Process, error) {
+	var name, err = p.Name()
+	if err != nil {
+		return Process{}, err
+	}
+
+	un, _ := p.UserName()
+
+	createTime, _ := p.CreateTime()
+
+	cmd, _ := p.CmdLine()
+	var mStr = ""
+	mem, err := p.MemoryInfo()
+	if err != nil {
+		mStr = "deny"
+	} else {
+		mStr = size(int64(mem.RSS))
+	}
+
+	var gid = getGroupID(p)
+	var gidStr = fmt.Sprintf("%d", gid)
+	if gid == -1 {
+		gidStr = ""
+	}
+
+	var rp = Process{
+		Name:       name,
+		Pid:        fmt.Sprintf("%d", p.Pid),
+		CreateTime: createTime / 1000,
+		process:    p,
+		Cmd:        cmd,
+		Mem:        mStr,
+		UserName:   un,
+		GroupID:    gidStr,
+	}
+
+	return rp, nil
 }
 
 func execCmd(c string, args ...string) ([]byte, error) {
@@ -404,7 +367,7 @@ func findProcessByPort(port ...int32) Processes {
 		return nil
 	}
 
-	var processes Processes
+	var pss Processes
 
 	for i := 0; i < len(port); i++ {
 
@@ -423,11 +386,11 @@ func findProcessByPort(port ...int32) Processes {
 			p[k].Pid = fmt.Sprintf("%d", p[k].process.Pid)
 		}
 
-		processes = append(processes, p...)
+		pss = append(pss, p...)
 
 	}
 
-	return processes
+	return pss
 }
 
 func size(i int64) string {

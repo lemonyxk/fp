@@ -12,16 +12,21 @@ package main
 
 func help() string {
 	return `
-Usage: fp -o port1 port2
+Usage: fp -o port
   -- find process by port number
 
-Usage: fp -l
-  -- list all processes
+Usage: fp
+  -- current and root user processes
 
-Usage: fp -p pid1 pid2
+Usage: fp -a
+  -- all processes
+
+Usage: fp -c
+  -- full command info
+
+Usage: fp -p pid
   -- find process by pid number
 
-Usage: fp str1 str2
-  -- find process by string
-`
+Usage: fp string
+  -- find process by string`
 }

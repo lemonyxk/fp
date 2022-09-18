@@ -15,9 +15,18 @@ import (
 	"strconv"
 
 	"github.com/lemonyxk/console"
+	"github.com/lemonyxk/utils/v3"
 )
 
 var processes []*P
+
+var flags = []string{
+	"-a", "-c",
+	"-o", "--port",
+	"-p", "--pid",
+	"-h", "--help",
+	"-k", "--kill",
+}
 
 func main() {
 
@@ -25,17 +34,14 @@ func main() {
 
 	initPortMap()
 
-	if len(os.Args) == 1 {
-		console.Info(list())
-		return
-	}
-
 	var ps Processes
 
-	switch os.Args[1] {
+	switch argsIndex(1) {
 	// list all processes
-	case "-a":
-		console.Info(list())
+	case "", "-a", "-c":
+		ps = list()
+		console.Info(ps)
+		console.Info("[", len(ps), "processes", "]")
 		return
 	// find process by port
 	case "-o", "--port":
@@ -52,16 +58,13 @@ func main() {
 
 	console.Info(ps)
 
+	console.Info("[", len(ps), "processes", "]")
+
 	if len(ps) == 0 {
 		return
 	}
 
-	var k = hasArgs("-k")
-	if !k {
-		k = hasArgs("--kill")
-	}
-
-	if !k {
+	if !hasArgs("-k", "--kill") {
 		return
 	}
 
@@ -69,20 +72,14 @@ func main() {
 }
 
 func filterArgs() []string {
-	var index = -1
-	for i := 0; i < len(os.Args); i++ {
-		if os.Args[i] == "-k" || os.Args[i] == "--kill" {
-			index = i
-			break
+	var res []string
+	for i := 1; i < len(os.Args); i++ {
+		if utils.ComparableArray(&flags).Has(os.Args[i]) {
+			continue
 		}
+		res = append(res, os.Args[i])
 	}
-
-	var args = os.Args
-
-	if index != -1 {
-		args = args[0:index]
-	}
-	return args[1:]
+	return res
 }
 
 func toInt32(str []string) []int32 {
@@ -103,17 +100,26 @@ func toInt32(str []string) []int32 {
 	return res
 }
 
-func hasArgs(flag string) bool {
+func argsIndex(index int) string {
+	if len(os.Args) < index+1 {
+		return ""
+	}
+	return os.Args[index]
+}
+
+func hasArgs(flag ...string) bool {
 	var args = os.Args
 	for i := 0; i < len(args); i++ {
-		if args[i] == flag {
-			return true
+		for j := 0; j < len(flag); j++ {
+			if args[i] == flag[j] {
+				return true
+			}
 		}
 	}
 	return false
 }
 
-func getArgs(flag []string) string {
+func getArgs(flag ...string) string {
 	var args = os.Args
 	for i := 0; i < len(args); i++ {
 		for j := 0; j < len(flag); j++ {

@@ -23,7 +23,7 @@ import (
 
 func kill(processes Processes) {
 
-	var killValue = getArgs([]string{"-k", "--kill"})
+	var killValue = getArgs("-k", "--kill")
 
 	if killValue == "" {
 		killValue = "15"
