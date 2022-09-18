@@ -46,6 +46,14 @@ var selfPid = os.Getpid()
 
 type Processes []Process
 
+func (p Process) String() string {
+	var str = ""
+	// Pid GPid Mem UserName Name Port Cmd
+	str += p.Pid + "  " + p.GroupID + " " + p.Mem + " " + p.UserName + " " +
+		p.Name + " " + p.Port + " " + p.Cmd
+	return str
+}
+
 func (p Processes) String() string {
 
 	if len(p) == 0 {
@@ -167,11 +175,15 @@ func (p Processes) String() string {
 				if cmd {
 					var index = 0
 					var s []rune
+					var l = cmdMaxLen
 					for {
 						s = append(s, rune(p[i].Cmd[index]))
-						if text.RuneCount(string(s)) >= cmdMaxLen {
+						if text.RuneCount(string(s)) >= l {
 							add += string(s) + "\n"
-							add += strings.Repeat(" ", termWidth-cmdMaxLen)
+							add += strings.Repeat(" ", termWidth-cmdMaxLen+0)
+							if l == cmdMaxLen {
+								l = l - 0
+							}
 							s = []rune{}
 						}
 						index++
@@ -210,6 +222,12 @@ func (p Processes) String() string {
 
 		if p[i].isColored {
 			add = strings.ReplaceAll(add, p[i].colorStr, console.FgRed.Sprint(p[i].colorStr))
+		}
+
+		if i%2 == 0 {
+			// add = console.FgGreen.Sprint(add)
+		} else {
+			add = console.FgCyan.Sprint(add)
 		}
 
 		str += add
@@ -279,22 +297,17 @@ func findProcessByString(str ...string) Processes {
 		}
 
 		for j := 0; j < len(str); j++ {
-
-			if strings.Contains(r.Name, str[j]) {
-				r.isColored = true
-				r.colorStr = str[j]
-				res = append(res, r)
-				break
-			} else if strings.Contains(r.Pid, str[j]) {
-				r.isColored = true
-				r.colorStr = str[j]
-				res = append(res, r)
-				break
-			} else if strings.Contains(r.Cmd, str[j]) {
+			if strings.Contains(r.Cmd, str[j]) {
 				var pidS = getPid(pidProcess)
 				if utils.ComparableArray(&pidS).Has(p.Pid) {
 					break
 				}
+				r.isColored = true
+				r.colorStr = str[j]
+				res = append(res, r)
+				break
+			}
+			if strings.Contains(r.String(), str[j]) {
 				r.isColored = true
 				r.colorStr = str[j]
 				res = append(res, r)

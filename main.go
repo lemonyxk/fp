@@ -11,6 +11,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 
@@ -34,31 +35,37 @@ func main() {
 
 	initPortMap()
 
+	var args = filterArgs()
+
 	var ps Processes
 
-	switch argsIndex(1) {
-	// list all processes
-	case "", "-a", "-c":
+	// help
+	if hasArgs("-h", "--help") {
+		console.Info(help())
+		return
+	}
+
+	// list
+	if len(args) == 0 {
 		ps = list()
 		console.Info(ps)
-		console.Info("[", len(ps), "processes", "]")
+		console.Info(fmt.Sprintf("[%d results]", len(ps)))
 		return
-	// find process by port
+	}
+
+	switch argsIndex(1) {
 	case "-o", "--port":
 		ps = findProcessByPort(toInt32(os.Args[2:])...)
 	// find process by pid
 	case "-p", "--pid":
 		ps = findProcessByPID(toInt32(os.Args[2:])...)
-	case "-h", "--help":
-		console.Info(help())
-		return
 	default:
 		ps = findProcessByString(filterArgs()...)
 	}
 
 	console.Info(ps)
 
-	console.Info("[", len(ps), "processes", "]")
+	console.Info(fmt.Sprintf("[%d results]", len(ps)))
 
 	if len(ps) == 0 {
 		return
