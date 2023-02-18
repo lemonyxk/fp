@@ -35,7 +35,11 @@ func initPortMap() {
 		var port = addr[strings.LastIndex(addr, ":")+1:]
 
 		var o, _ = strconv.Atoi(port)
-		var p, _ = strconv.Atoi(res[i][6][:strings.Index(res[i][6], "/")])
+		var index = strings.Index(res[i][6], "/")
+		if index == -1 {
+			index = 0
+		}
+		var p, _ = strconv.Atoi(res[i][6][:index])
 		netMap[o] = p
 	}
 }

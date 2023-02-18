@@ -3,6 +3,7 @@ module github.com/lemonyxk/fp
 go 1.19
 
 require (
+	github.com/jedib0t/go-pretty v4.3.0+incompatible
 	github.com/lemonyxk/console v0.0.0-20220524105508-19a1ac7f4c08
 	github.com/lemonyxk/utils/v3 v3.0.0-20220802233030-4c46513cfbc2
 	github.com/olekukonko/ts v0.0.0-20171002115256-78ecb04241c0
@@ -15,7 +16,6 @@ require (
 	github.com/go-openapi/errors v0.19.8 // indirect
 	github.com/go-openapi/strfmt v0.21.2 // indirect
 	github.com/go-stack/stack v1.8.0 // indirect
-	github.com/jedib0t/go-pretty v4.3.0+incompatible // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/lemonyxk/caller v0.0.0-20220321145833-a460d38644d8 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
